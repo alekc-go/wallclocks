@@ -1,3 +1,7 @@
 domain: ziglu.io
 repo: wallclocks
+resources:
+- group: wallclocks
+  kind: Timezone
+  version: v1beta1
 version: "2"
