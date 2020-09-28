@@ -4,4 +4,7 @@ resources:
 - group: wallclocks
   kind: Timezone
   version: v1beta1
+- group: wallclocks
+  kind: WallClock
+  version: v1beta1
 version: "2"

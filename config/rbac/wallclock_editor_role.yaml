@@ -1,0 +1,24 @@
+# permissions for end users to edit wallclocks.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: wallclock-editor-role
+rules:
+- apiGroups:
+  - wallclocks.ziglu.io
+  resources:
+  - wallclocks
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - wallclocks.ziglu.io
+  resources:
+  - wallclocks/status
+  verbs:
+  - get

@@ -1,0 +1,7 @@
+apiVersion: wallclocks.ziglu.io/v1beta1
+kind: WallClock
+metadata:
+  name: wallclock-sample
+spec:
+  # Add fields here
+  foo: bar
