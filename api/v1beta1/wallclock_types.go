@@ -20,44 +20,46 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// TimezoneSpec defines the desired state of Timezone
-type TimezoneSpec struct {
+// WallClockSpec defines the desired state of WallClock
+type WallClockSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Timezones is a list of valid timezones
-	// +kubebuilder:validation:MinItems=1
+	// Timezone is the timezone related to this wallclock
 	// +kubebuilder:validation:Required
-	Timezones []string `json:"timezones"`
+	Timezone string `json:"timezone"`
 }
 
-// TimezoneStatus defines the observed state of Timezone
-type TimezoneStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	Error string `json:"error,omitempty"`
+// WallClockStatus defines the observed state of WallClock
+type WallClockStatus struct {
+	// Important: Run "make" to regenerate code after modifying this file
+
+	// +kubebuilder:validation:Required
+	Time string `json:"time"`
 }
 
 // +kubebuilder:object:root=true
 
-// Timezone is the Schema for the timezones API
-type Timezone struct {
+// WallClock is the Schema for the wallclocks API
+type WallClock struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   TimezoneSpec   `json:"spec,omitempty"`
-	Status TimezoneStatus `json:"status,omitempty"`
+	Spec   WallClockSpec   `json:"spec,omitempty"`
+	Status WallClockStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
-// TimezoneList contains a list of Timezone
-type TimezoneList struct {
+// WallClockList contains a list of WallClock
+type WallClockList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Timezone `json:"items"`
+	Items           []WallClock `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&Timezone{}, &TimezoneList{})
+	SchemeBuilder.Register(&WallClock{}, &WallClockList{})
 }
