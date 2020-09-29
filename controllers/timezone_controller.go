@@ -58,7 +58,7 @@ func (r *TimezoneReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			cLog.Error(err, "could not find requested tz")
 			return reconcile.Result{Requeue: false}, nil
 		}
-		cLog.Error(err, "could not find requested tz")
+		cLog.Error(err, "error while fetching required tz")
 		return reconcile.Result{
 			Requeue:      true,
 			RequeueAfter: 15 * time.Second}, err
