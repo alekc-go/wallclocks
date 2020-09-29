@@ -7,3 +7,11 @@ spec:
   timezones:
     - America/Los_Angeles
     - Europe/London
+---
+apiVersion: wallclocks.ziglu.io/v1beta1
+kind: Timezone
+metadata:
+  name: italy
+spec:
+  timezones:
+    - Europe/Rome

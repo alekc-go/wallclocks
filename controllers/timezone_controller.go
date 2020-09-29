@@ -23,6 +23,8 @@ import (
 	"time"
 	"wallclocks/timezone"
 
+	"k8s.io/apimachinery/pkg/api/errors"
+
 	"k8s.io/apimachinery/pkg/types"
 
 	"k8s.io/utils/pointer"
@@ -78,9 +80,12 @@ func (r *TimezoneReconciler) StartClock(clock wallclocksv1beta1.WallClock) {
 			patchValue = fmt.Sprintf(`{"status":{"time":"%s"}}`, time.Now().In(loc).Format("15:04:05"))
 
 			//note, I am ignoring the error here simply for the lack of time to properly dealing with it.
+			//only in case I get 404, I just exit from here.
+			//reconciler would take care of any discrepancies.
 			err = r.Client.Patch(context.Background(), &clock, client.RawPatch(types.MergePatchType, []byte(patchValue)))
-			if err != nil {
-				fmt.Println(err)
+			if err != nil && errors.IsNotFound(err) {
+				close(stopChannel)
+				return
 			}
 
 			//sleep for a second, and then retry.
@@ -99,7 +104,10 @@ func (r *TimezoneReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	//fetch the related timezone
 	var tz = &wallclocksv1beta1.Timezone{}
 	if err := r.Client.Get(ctx, req.NamespacedName, tz); err != nil {
-		cLog.Error(err, "could not find requested tz")
+		//if the error is that we are unable to find the resource, it's likely because it's deleted
+		if !errors.IsNotFound(err) {
+			cLog.Error(err, "could not find requested tz")
+		}
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
@@ -108,6 +116,16 @@ func (r *TimezoneReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	if err != nil {
 		cLog.Error(err, "could not fetch children")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
+	//are we under deletion?
+	if !tz.ObjectMeta.DeletionTimestamp.IsZero() {
+		cLog.Info("deleting timezone")
+		//no further action is required from here.
+		for _, clock := range clockMap {
+			r.deleteClock(ctx, clock)
+		}
+		return ctrl.Result{}, nil
 	}
 
 	//loop through all requested timezones
@@ -135,24 +153,28 @@ func (r *TimezoneReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			return reconcile.Result{}, err
 		}
 		//create a new WallClock
-		clock, err := createClock(ctx, r.Client, location, tz)
+		err = createClock(ctx, r.Client, location, tz)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
-		r.StartClock(clock)
 	}
 
 	//check if we have any orphans. If that's the case, stop the ticker, and delete the child
-	for location, clock := range clockMap {
-		//stop the ticker (if we have one up and running)
-		if stopChannel, found := r.Clocks.LoadAndDelete(location); found {
-			stopChannel.(chan int) <- 1
-		}
+	for _, clock := range clockMap {
 		//for the sake of exercise I am going to ignore this atm
-		_ = r.Delete(ctx, &clock)
+		r.deleteClock(ctx, clock)
 	}
 
 	return ctrl.Result{}, nil
+}
+
+func (r *TimezoneReconciler) deleteClock(ctx context.Context, clock wallclocksv1beta1.WallClock) {
+	//stop the ticker (if we have one up and running)
+	if stopChannel, found := r.Clocks.LoadAndDelete(clock.Spec.Timezone); found {
+		stopChannel.(chan int) <- 1
+	}
+	//we are ignoring the error here for the sake of exercise
+	_ = r.Delete(ctx, &clock)
 }
 
 // loadChildrenClocks loads all children from the parent tz
@@ -171,7 +193,7 @@ func loadChildrenClocks(ctx context.Context, cl client.Client, tz *wallclocksv1b
 	return result, nil
 }
 
-func createClock(ctx context.Context, cl client.Client, location string, tz *wallclocksv1beta1.Timezone) (wallclocksv1beta1.WallClock, error) {
+func createClock(ctx context.Context, cl client.Client, location string, tz *wallclocksv1beta1.Timezone) error {
 	//get the clean location name
 	cleanName := fmt.Sprintf("%s-%s", tz.Name, timezone.CleanName(location))
 
@@ -194,20 +216,7 @@ func createClock(ctx context.Context, cl client.Client, location string, tz *wal
 		},
 		Status: wallclocksv1beta1.WallClockStatus{},
 	}
-	err := cl.Create(ctx, &clock)
-	if err != nil {
-		return clock, err
-	}
-
-	//retrieve the created wall clock and return it
-	searchKey := client.ObjectKey{
-		Namespace: tz.Namespace,
-		Name:      cleanName,
-	}
-	if err := cl.Get(ctx, searchKey, &clock); err != nil {
-		return clock, err
-	}
-	return clock, nil
+	return cl.Create(ctx, &clock)
 }
 
 func (r *TimezoneReconciler) SetupWithManager(mgr ctrl.Manager) error {
