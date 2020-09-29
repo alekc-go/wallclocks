@@ -4,4 +4,5 @@ metadata:
   name: timezone-sample
 spec:
   # Add fields here
-  foo: bar
+  timezones:
+    - America/Los_Angeles
