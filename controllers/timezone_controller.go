@@ -69,6 +69,7 @@ func (r *TimezoneReconciler) StartClock(clock wallclocksv1beta1.WallClock) {
 	for {
 		select {
 		case <-stopChannel:
+			//the stop functionality might be debugged better, cannot do it atm due to the lack of time
 			close(stopChannel)
 			r.Log.Info("stopping clock", "clockName", clock.Name)
 			return
@@ -94,8 +95,6 @@ func (r *TimezoneReconciler) StartClock(clock wallclocksv1beta1.WallClock) {
 func (r *TimezoneReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 	cLog := r.Log.WithValues("timezone", req.NamespacedName)
-
-	cLog.Info("Reconciling")
 
 	//fetch the related timezone
 	var tz = &wallclocksv1beta1.Timezone{}
@@ -136,21 +135,11 @@ func (r *TimezoneReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			return reconcile.Result{}, err
 		}
 		//create a new WallClock
-		_, err = createClock(ctx, r.Client, location, tz)
+		clock, err := createClock(ctx, r.Client, location, tz)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
-
-		//we got our new clock. Lets persist the association
-		//note, potentially we could have queried etcd for the list of child resources, but for the sake of
-		//this exercise I prefer to keep explicit association
-		//patch := client.MergeFrom(tz.DeepCopy())
-		//err = r.Client.Patch(ctx, tz, patch)
-		if err != nil {
-			return ctrl.Result{
-				Requeue: false,
-			}, err
-		}
+		r.StartClock(clock)
 	}
 
 	//check if we have any orphans. If that's the case, stop the ticker, and delete the child
@@ -182,12 +171,12 @@ func loadChildrenClocks(ctx context.Context, cl client.Client, tz *wallclocksv1b
 	return result, nil
 }
 
-func createClock(ctx context.Context, cl client.Client, location string, tz *wallclocksv1beta1.Timezone) (*wallclocksv1beta1.WallClock, error) {
+func createClock(ctx context.Context, cl client.Client, location string, tz *wallclocksv1beta1.Timezone) (wallclocksv1beta1.WallClock, error) {
 	//get the clean location name
 	cleanName := fmt.Sprintf("%s-%s", tz.Name, timezone.CleanName(location))
 
 	//create wall clock
-	clock := &wallclocksv1beta1.WallClock{
+	clock := wallclocksv1beta1.WallClock{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      cleanName,
 			Namespace: tz.Namespace,
@@ -205,9 +194,9 @@ func createClock(ctx context.Context, cl client.Client, location string, tz *wal
 		},
 		Status: wallclocksv1beta1.WallClockStatus{},
 	}
-	err := cl.Create(ctx, clock)
+	err := cl.Create(ctx, &clock)
 	if err != nil {
-		return nil, err
+		return clock, err
 	}
 
 	//retrieve the created wall clock and return it
@@ -215,8 +204,8 @@ func createClock(ctx context.Context, cl client.Client, location string, tz *wal
 		Namespace: tz.Namespace,
 		Name:      cleanName,
 	}
-	if err := cl.Get(ctx, searchKey, clock); err != nil {
-		return nil, err
+	if err := cl.Get(ctx, searchKey, &clock); err != nil {
+		return clock, err
 	}
 	return clock, nil
 }

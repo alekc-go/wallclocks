@@ -1,2 +1,4 @@
 Ideally we would have an admission controller in which we would check that a given timezone is a valid one
 I mostly ignore capitalization on location
+Duplicated locations in one timezone are not checked (they could cause some interesting bugs)
+
