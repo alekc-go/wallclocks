@@ -69,6 +69,8 @@ func (r *TimezoneReconciler) StartClock(clock wallclocksv1beta1.WallClock) {
 	for {
 		select {
 		case <-stopChannel:
+			close(stopChannel)
+			r.Log.Info("stopping clock", "clockName", clock.Name)
 			return
 		default:
 			//update our clock with newer value and persist
@@ -79,9 +81,10 @@ func (r *TimezoneReconciler) StartClock(clock wallclocksv1beta1.WallClock) {
 			if err != nil {
 				fmt.Println(err)
 			}
+
 			//sleep for a second, and then retry.
 			//Note, if there is any delay linked to execution, it would mean that we will have a drift in time (so the end result
-			// would be 0-1 sec
+			//would be 0-1 sec
 			//if it's essential that an object is being patched every second, then slightly different strategy is needed
 			//perhaps spinning an additional goroutine
 			time.Sleep(time.Second * 1)
@@ -91,6 +94,7 @@ func (r *TimezoneReconciler) StartClock(clock wallclocksv1beta1.WallClock) {
 func (r *TimezoneReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 	cLog := r.Log.WithValues("timezone", req.NamespacedName)
+
 	cLog.Info("Reconciling")
 
 	//fetch the related timezone
@@ -111,6 +115,10 @@ func (r *TimezoneReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	for _, location := range tz.Spec.Timezones {
 		//if we have already this location for this specific timezone object, then skip the creation stage
 		if clock, found := clockMap[location]; found {
+			//remove the child from the clockMap
+			//this would give some errors in case we have duplicated location in one timezone
+			//but again, this kind of errors should be solved by an admission controller
+			delete(clockMap, location)
 			//only if this clock was not started yet, spawn the ticker
 			if _, found = r.Clocks.Load(clock.UID); !found {
 				go r.StartClock(clock)
@@ -143,6 +151,16 @@ func (r *TimezoneReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 				Requeue: false,
 			}, err
 		}
+	}
+
+	//check if we have any orphans. If that's the case, stop the ticker, and delete the child
+	for location, clock := range clockMap {
+		//stop the ticker (if we have one up and running)
+		if stopChannel, found := r.Clocks.LoadAndDelete(location); found {
+			stopChannel.(chan int) <- 1
+		}
+		//for the sake of exercise I am going to ignore this atm
+		_ = r.Delete(ctx, &clock)
 	}
 
 	return ctrl.Result{}, nil
