@@ -1,11 +1,11 @@
-package timezone
+package name
 
 import (
 	"strings"
 )
 
-// CleanName cleans the name of
-func CleanName(name string) string {
+// Clean cleans the name of
+func Clean(name string) string {
 	name = strings.ToLower(strings.TrimSpace(name))
 	name = strings.ReplaceAll(name, "/", "-")
 	name = strings.ReplaceAll(name, "_", "-")

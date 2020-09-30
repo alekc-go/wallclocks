@@ -21,24 +21,19 @@ import (
 	"fmt"
 	"sync"
 	"time"
-	"wallclocks/timezone"
 
-	"k8s.io/apimachinery/pkg/api/errors"
+	name2 "alekc.dev/wallclocks/name"
 
-	"k8s.io/apimachinery/pkg/types"
-
-	"k8s.io/utils/pointer"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
+	wallclocksv1beta1 "alekc.dev/wallclocks/api/v1beta1"
 	"github.com/go-logr/logr"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	wallclocksv1beta1 "wallclocks/api/v1beta1"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 // TimezoneReconciler reconciles a Timezone object
@@ -195,7 +190,7 @@ func loadChildrenClocks(ctx context.Context, cl client.Client, tz *wallclocksv1b
 
 func createClock(ctx context.Context, cl client.Client, location string, tz *wallclocksv1beta1.Timezone) error {
 	//get the clean location name
-	cleanName := fmt.Sprintf("%s-%s", tz.Name, timezone.CleanName(location))
+	cleanName := fmt.Sprintf("%s-%s", tz.Name, name2.Clean(location))
 
 	//create wall clock
 	clock := wallclocksv1beta1.WallClock{

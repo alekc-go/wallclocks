@@ -26,8 +26,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	wallclocksv1beta1 "wallclocks/api/v1beta1"
-	"wallclocks/controllers"
+	wallclocksv1beta1 "alekc.dev/wallclocks/api/v1beta1"
+	"alekc.dev/wallclocks/controllers"
 	// +kubebuilder:scaffold:imports
 )
 

@@ -1,4 +1,4 @@
-module wallclocks
+module alekc.dev/wallclocks
 
 go 1.13
 
