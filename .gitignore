@@ -21,3 +21,6 @@ bin
 *.swp
 *.swo
 *~
+
+
+.DS_STORE

@@ -1,0 +1,65 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.2.5
+  creationTimestamp: null
+  name: timezones.wallclocks.ziglu.io
+spec:
+  group: wallclocks.ziglu.io
+  names:
+    kind: Timezone
+    listKind: TimezoneList
+    plural: timezones
+    singular: timezone
+  scope: Namespaced
+  validation:
+    openAPIV3Schema:
+      description: Timezone is the Schema for the timezones API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: TimezoneSpec defines the desired state of Timezone
+          properties:
+            timezones:
+              description: Timezones is a list of valid timezones
+              items:
+                type: string
+              minItems: 1
+              type: array
+          required:
+          - timezones
+          type: object
+        status:
+          description: TimezoneStatus defines the observed state of Timezone
+          properties:
+            error:
+              description: INSERT ADDITIONAL STATUS FIELD - define observed state
+                of cluster
+              type: string
+          type: object
+      type: object
+  version: v1beta1
+  versions:
+  - name: v1beta1
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

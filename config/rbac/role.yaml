@@ -1,0 +1,40 @@
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: manager-role
+rules:
+- apiGroups:
+  - wallclocks.ziglu.io
+  resources:
+  - timezones
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - wallclocks.ziglu.io
+  resources:
+  - timezones/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - wallclocks.ziglu.io
+  resources:
+  - wallclocks
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
